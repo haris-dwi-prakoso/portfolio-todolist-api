@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UnauthorizedException, Res, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -13,29 +13,42 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
-  @UseGuards(AuthGuard)
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
+  // @UseGuards(AuthGuard)
+  // @Get()
+  // findAll() {
+  //   return this.usersService.findAll();
+  // }
 
-  @UseGuards(AuthGuard)
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
+  // @UseGuards(AuthGuard)
+  // @Get(':id')
+  // async findOne(@Param('id') id: string, @Res() res) {
+  //   let result = await this.usersService.findOne(+id);
+  //   let resultJson = JSON.parse(JSON.stringify(result))
+  //   let { password, ...userdata } = resultJson;
+  //   if (result !== null) res.status(HttpStatus.OK).json(userdata);
+  //   else res.status(HttpStatus.NOT_FOUND).send("User not found");
+  // }
 
   @UseGuards(AuthGuard)
   @Patch(':id')
-  update(@Req() request, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    if (request.user.sub == Number(id)) return this.usersService.update(+id, updateUserDto);
+  async update(@Req() request, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Res() res) {
+    if (request.user.sub == Number(id)) {
+      let result = await this.usersService.update(+id, updateUserDto);
+      let { password, ...updatedata } = updateUserDto;
+      if (result[0] > 0) res.status(HttpStatus.OK).json(updatedata);
+      else res.status(HttpStatus.NOT_FOUND).send("User not found");
+    }
     else throw new UnauthorizedException();
   }
 
   @UseGuards(AuthGuard)
   @Delete(':id')
-  remove(@Req() request, @Param('id') id: string) {
-    if (request.user.sub == Number(id)) return this.usersService.remove(+id);
+  async remove(@Req() request, @Param('id') id: string, @Res() res) {
+    if (request.user.sub == Number(id)) {
+      let result = await this.usersService.remove(+id);
+      if (result[0] > 0) res.status(HttpStatus.OK).send("User has been deactivated");
+      else res.status(HttpStatus.NOT_FOUND).send("User not found");
+    }
     else throw new UnauthorizedException();
   }
 }

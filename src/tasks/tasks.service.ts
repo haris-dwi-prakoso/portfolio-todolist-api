@@ -27,7 +27,7 @@ export class TasksService {
     else if (status == "in_progress") whereQuery["isDone"] = false;
     return await this.tasks.findAll({
       where: whereQuery
-    })
+    });
   }
 
   async findOne(id: number, userId: number) {
