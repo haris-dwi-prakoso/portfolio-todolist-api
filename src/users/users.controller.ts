@@ -2,7 +2,7 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Unau
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -33,10 +33,14 @@ export class UsersController {
   @Patch(':id')
   async update(@Req() request, @Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @Res() res) {
     if (request.user.sub == Number(id)) {
-      let result = await this.usersService.update(+id, updateUserDto);
-      let { password, ...updatedata } = updateUserDto;
-      if (result[0] > 0) res.status(HttpStatus.OK).json(updatedata);
-      else res.status(HttpStatus.NOT_FOUND).send("User not found");
+      try {
+        let result = await this.usersService.update(+id, updateUserDto);
+        let resultJson = JSON.parse(JSON.stringify(result));
+        let { password, ...updatedata } = resultJson;
+        return res.status(HttpStatus.OK).json(updatedata);
+      } catch (e) {
+        return res.status(HttpStatus.NOT_FOUND).send("User not found");
+      }
     }
     else throw new UnauthorizedException();
   }
@@ -45,9 +49,12 @@ export class UsersController {
   @Delete(':id')
   async remove(@Req() request, @Param('id') id: string, @Res() res) {
     if (request.user.sub == Number(id)) {
-      let result = await this.usersService.remove(+id);
-      if (result[0] > 0) res.status(HttpStatus.OK).send("User has been deactivated");
-      else res.status(HttpStatus.NOT_FOUND).send("User not found");
+      try {
+        await this.usersService.remove(+id);
+        return res.status(HttpStatus.OK).send("User has been deactivated");
+      } catch (e) {
+        return res.status(HttpStatus.NOT_FOUND).send("User not found");
+      }
     }
     else throw new UnauthorizedException();
   }

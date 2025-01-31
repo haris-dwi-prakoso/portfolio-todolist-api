@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { InjectModel } from '@nestjs/sequelize';
@@ -37,16 +37,18 @@ export class TasksService {
   }
 
   async update(id: number, userId: number, updateTaskDto: UpdateTaskDto) {
-    return await this.tasks.update(updateTaskDto,
-      {
-        where: { id: id, userId: userId }
-      }
-    );
+    let task = await this.tasks.findOne({
+      where: { id: id, userId: userId }
+    });
+    if (!task) throw new NotFoundException();
+    return await task.update(updateTaskDto);
   }
 
   async remove(id: number, userId: number) {
-    return await this.tasks.destroy({
+    let task = await this.tasks.findOne({
       where: { id: id, userId: userId }
     });
+    if (!task) throw new NotFoundException();
+    return await task.destroy();
   }
 }

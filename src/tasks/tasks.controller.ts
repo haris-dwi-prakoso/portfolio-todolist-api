@@ -1,9 +1,9 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req, UnauthorizedException, Query, Res, HttpStatus } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { UsersService } from 'src/users/users.service';
+import { UsersService } from '../users/users.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { AuthGuard } from 'src/auth/auth.guard';
+import { AuthGuard } from '../auth/auth.guard';
 
 @Controller('tasks')
 export class TasksController {
@@ -36,25 +36,31 @@ export class TasksController {
   async findOne(@Req() request, @Param('id') id: string, @Res() res) {
     let userId = request.user.sub;
     let result = await this.tasksService.findOne(+id, userId);
-    if (result !== null) res.status(HttpStatus.OK).json(result);
-    else res.status(HttpStatus.NOT_FOUND).send("Task not found or not registered under this user");
+    if (result !== null) return res.status(HttpStatus.OK).json(result);
+    else return res.status(HttpStatus.NOT_FOUND).send("Task not found or not registered under this user");
   }
 
   @UseGuards(AuthGuard)
   @Patch(':id')
   async update(@Req() request, @Param('id') id: string, @Body() updateTaskDto: UpdateTaskDto, @Res() res) {
-    let userId = request.user.sub;
-    let result = await this.tasksService.update(+id, userId, updateTaskDto);
-    if (result[0] > 0) res.status(HttpStatus.OK).send("Task successfully updated");
-    else res.status(HttpStatus.NOT_FOUND).send("Task not found or not registered under this user");
+    try {
+      let userId = request.user.sub;
+      let result = await this.tasksService.update(+id, userId, updateTaskDto);
+      return res.status(HttpStatus.OK).json(result);
+    } catch (e) {
+      return res.status(HttpStatus.NOT_FOUND).send("Task not found or not registered under this user");
+    }
   }
 
   @UseGuards(AuthGuard)
   @Delete(':id')
   async remove(@Req() request, @Param('id') id: string, @Res() res) {
-    let userId = request.user.sub;
-    let result = await this.tasksService.remove(+id, userId);
-    if (result > 0) res.status(HttpStatus.OK).send("Task successfully deleted");
-    else res.status(HttpStatus.NOT_FOUND).send("Task not found or not registered under this user");
+    try {
+      let userId = request.user.sub;
+      await this.tasksService.remove(+id, userId);
+      return res.status(HttpStatus.OK).send("Task successfully deleted");
+    } catch (e) {
+      return res.status(HttpStatus.NOT_FOUND).send("Task not found or not registered under this user");
+    }
   }
 }
